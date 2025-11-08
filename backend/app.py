@@ -30,10 +30,13 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=config['app']['sess
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
+app.config['WTF_CSRF_ENABLED'] = False
+
+ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5000,https://*.replit.dev,https://*.repl.co').split(',')]
 
 Session(app)
-CORS(app, supports_credentials=True, origins=['*'])
-socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet', manage_session=False)
+CORS(app, supports_credentials=True, origins=ALLOWED_ORIGINS, allow_headers=['Content-Type', 'X-CSRF-Token'])
+socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode='eventlet', manage_session=False)
 
 engine = create_engine('sqlite:///portal.db', echo=False)
 Base.metadata.create_all(engine)
@@ -58,6 +61,27 @@ def requires_role(*roles):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+def validate_csrf():
+    if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
+        csrf_token = request.headers.get('X-CSRF-Token')
+        session_token = session.get('csrf_token')
+        if not csrf_token or csrf_token != session_token:
+            return jsonify({'error': 'Invalid CSRF token'}), 403
+    return None
+
+@app.before_request
+def csrf_protect():
+    if request.endpoint and request.endpoint != 'get_csrf_token' and not request.path.startswith('/socket.io'):
+        result = validate_csrf()
+        if result:
+            return result
+
+@app.route('/api/csrf-token', methods=['GET'])
+def get_csrf_token():
+    if 'csrf_token' not in session:
+        session['csrf_token'] = secrets.token_hex(32)
+    return jsonify({'csrf_token': session['csrf_token']})
 
 def log_activity(action, target_type=None, target_id=None, meta=None):
     try:

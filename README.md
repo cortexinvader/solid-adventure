@@ -218,6 +218,18 @@ print("Private Key:", vapid_key['private_key'])
 - Never store plaintext passwords
 - Session cookies are HttpOnly and SameSite=Lax
 
+### CORS and CSRF Protection
+- CORS restricted to trusted origins (localhost and Replit domains)
+- CSRF tokens automatically generated and validated on all state-changing requests
+- Frontend API client includes CSRF token in request headers
+- Socket.IO connections also restricted to allowed origins
+- Configure additional origins via `ALLOWED_ORIGINS` environment variable
+
+**Environment Variable Configuration**:
+```bash
+export ALLOWED_ORIGINS="http://localhost:5000,https://yourdomain.com"
+```
+
 ### File Security
 - File type validation on upload
 - Safe filename generation with secrets.token_hex()
