@@ -18,6 +18,10 @@ A comprehensive full-stack Progressive Web Application (PWA) for faculty communi
 - PWA support with service worker and offline caching
 - Monochrome theme with dark/light mode toggle
 - Automated scheduled tasks for cleanup and backups
+- **SECURITY FIX**: Implemented CORS origin restrictions (localhost + Replit domains) with configurable `ALLOWED_ORIGINS` environment variable
+- **SECURITY FIX**: Added CSRF token generation and validation for all state-changing endpoints (POST/PUT/DELETE/PATCH)
+- **SECURITY FIX**: Frontend API client automatically fetches and includes CSRF tokens in request headers
+- **SECURITY FIX**: Applied whitespace trimming to ALLOWED_ORIGINS parsing to prevent misconfiguration issues
 
 ## Project Architecture
 
