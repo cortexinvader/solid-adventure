@@ -7,7 +7,7 @@
     "session_timeout_minutes": 480
   },
   "departments": ["Computer Engineering", "Information Systems", "Software Engineering", "Network Engineering"],
-  "admin": {"username": "admin", "password": "ChangeMe123!"},
+  "admin": {"username": "admin", "password": "admin123"},
   "faculty_governor": {"username": "faculty_gov", "password": "ChangeMe123!"},
   "department_governors": [
     {"username": "ceng_gov", "password": "ChangeMe123!", "department": "Computer Engineering"},
@@ -17,6 +17,6 @@
   ],
   "ai": {"endpoint": "https://api.example.com/v1/ai"},
   "telegram": {"bot_token": "", "chat_id": ""},
-  "push": {"vapid_public_key": "", "vapid_private_key": "", "contact_email": "dev@example.com"},
+  "push": {"vapid_public_key": "BKXOjl_0YPgKKBhbcRLPNlxHWaPOV4g_3Fpoi91e2PrRh2gQiVRwYgDVpZ5FOtT3WCTQGS11RtYxljzjZ7Fs63U", "vapid_private_key": "1dHDDRCE8fanBPZ2UUcjPTRDnTIgeZ6ZL-5nv6ZmoLE", "contact_email": "cortexinvader@gmail.com"},
   "system": {"backup_interval_hours": 24, "telegram_send_interval_hours": 24}
 }
