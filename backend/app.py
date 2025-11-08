@@ -32,11 +32,18 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
 app.config['WTF_CSRF_ENABLED'] = False
 
-ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get('ALLOWED_ORIGINS', 'http://localhost:5000,https://*.replit.dev,https://*.repl.co').split(',')]
+# Serve frontend static files
+FRONTEND_BUILD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'dist')
+
+ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', '*')
+if ALLOWED_ORIGINS == '*':
+    cors_origins = '*'
+else:
+    cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',')]
 
 Session(app)
-CORS(app, supports_credentials=True, origins=ALLOWED_ORIGINS, allow_headers=['Content-Type', 'X-CSRF-Token'])
-socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode='eventlet', manage_session=False)
+CORS(app, supports_credentials=True, origins=cors_origins, allow_headers=['Content-Type', 'X-CSRF-Token'])
+socketio = SocketIO(app, cors_allowed_origins=cors_origins, async_mode='eventlet', manage_session=False)
 
 import sys
 
@@ -900,6 +907,14 @@ def manual_backup():
         return jsonify({'message': 'Backup completed', 'path': backup_path}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    if path and os.path.exists(os.path.join(FRONTEND_BUILD_PATH, path)):
+        return send_file(os.path.join(FRONTEND_BUILD_PATH, path))
+    else:
+        return send_file(os.path.join(FRONTEND_BUILD_PATH, 'index.html'))
 
 @socketio.on('connect')
 def handle_connect():
