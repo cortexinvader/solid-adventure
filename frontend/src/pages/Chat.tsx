@@ -4,7 +4,7 @@ import { rooms as roomsApi, messages as messagesApi } from '@/lib/api'
 import { socketService } from '@/lib/socket'
 import { useAuth } from '@/hooks/useAuth'
 import Header from '@/components/Header'
-import { Send, Image as ImageIcon, Smile } from 'lucide-react'
+import { Send, Image as ImageIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import type { Message, Room } from '@/types'
 
@@ -89,7 +89,7 @@ export default function Chat() {
     if (imageFile) {
       try {
         const response = await uploadImageMutation.mutateAsync(imageFile)
-        imageData = response.data
+        imageData = response.data as { filename: string; expires_at: string }
       } catch (error) {
         console.error('Image upload failed:', error)
         return
@@ -107,10 +107,6 @@ export default function Chat() {
     setImageFile(null)
   }
 
-  const handleReact = (messageId: number, emoji: string) => {
-    socketService.reactToMessage(messageId, emoji)
-  }
-
   return (
     <div className="min-h-screen bg-bg flex flex-col">
       <Header />
@@ -118,7 +114,7 @@ export default function Chat() {
         <aside className="w-64 bg-surface border-r border-border p-4">
           <h2 className="text-lg font-semibold text-text mb-4">Rooms</h2>
           <div className="space-y-2">
-            {roomsList?.map((room) => (
+            {roomsList?.map((room: Room) => (
               <button
                 key={room.id}
                 onClick={() => setSelectedRoom(room)}
@@ -142,7 +138,7 @@ export default function Chat() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin">
-                {messagesList?.map((message) => {
+                {messagesList?.map((message: Message) => {
                   const isOwn = message.sender_id === user?.id
                   return (
                     <div
@@ -178,7 +174,7 @@ export default function Chat() {
                         </div>
                         {Object.keys(message.reactions).length > 0 && (
                           <div className="flex gap-1 mt-2">
-                            {Object.entries(message.reactions).map(([emoji, users]) => (
+                            {Object.entries(message.reactions).map(([emoji, users]: [string, number[]]) => (
                               <span
                                 key={emoji}
                                 className="text-xs bg-muted px-2 py-1 rounded-full"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
@@ -122,7 +122,7 @@ export default function Signup() {
                 required
               >
                 <option value="">Select Department</option>
-                {depts?.map((dept) => (
+                {depts?.map((dept: any) => (
                   <option key={dept.id} value={dept.name}>
                     {dept.name}
                   </option>

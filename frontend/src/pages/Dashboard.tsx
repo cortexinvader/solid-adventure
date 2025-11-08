@@ -115,7 +115,7 @@ export default function Dashboard() {
             Notifications
           </h2>
 
-          {notifs?.map((notif) => (
+          {notifs?.map((notif: any) => (
             <div
               key={notif.id}
               className="bg-surface rounded-lg p-6 border border-border"

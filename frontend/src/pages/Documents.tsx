@@ -71,7 +71,7 @@ export default function Documents() {
         <div className="space-y-4">
           <h2 className="text-2xl font-semibold text-text">Uploaded Documents</h2>
 
-          {docs?.map((doc) => (
+          {docs?.map((doc: any) => (
             <div
               key={doc.id}
               className="bg-surface rounded-lg p-6 border border-border flex items-center justify-between"
