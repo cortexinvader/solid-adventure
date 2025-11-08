@@ -38,7 +38,10 @@ Session(app)
 CORS(app, supports_credentials=True, origins=ALLOWED_ORIGINS, allow_headers=['Content-Type', 'X-CSRF-Token'])
 socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode='eventlet', manage_session=False)
 
-engine = create_engine('sqlite:///portal.db', echo=False)
+import sys
+
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'portal.db')
+engine = create_engine(f'sqlite:///{DB_PATH}', echo=False)
 Base.metadata.create_all(engine)
 session_factory = sessionmaker(bind=engine)
 db_session = scoped_session(session_factory)
@@ -1152,5 +1155,8 @@ if __name__ == '__main__':
         
         scheduler.start()
         
+        port = int(os.environ.get('PORT', 8000))
         print(f"Starting {config['app']['name']}...")
-        socketio.run(app, host='0.0.0.0', port=8000, debug=False)
+        print(f"Backend server listening on 0.0.0.0:{port}")
+        sys.stdout.flush()
+        socketio.run(app, host='0.0.0.0', port=port, debug=False)
