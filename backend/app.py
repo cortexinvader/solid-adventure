@@ -35,15 +35,9 @@ app.config['WTF_CSRF_ENABLED'] = False
 # Serve frontend static files
 FRONTEND_BUILD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'dist')
 
-ALLOWED_ORIGINS = os.environ.get('ALLOWED_ORIGINS', '*')
-if ALLOWED_ORIGINS == '*':
-    cors_origins = '*'
-else:
-    cors_origins = [origin.strip() for origin in ALLOWED_ORIGINS.split(',')]
-
 Session(app)
-CORS(app, supports_credentials=True, origins=cors_origins, allow_headers=['Content-Type', 'X-CSRF-Token'])
-socketio = SocketIO(app, cors_allowed_origins=cors_origins, async_mode='eventlet', manage_session=False)
+CORS(app, supports_credentials=True, origins='*', allow_headers=['Content-Type', 'X-CSRF-Token'])
+socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet', manage_session=False)
 
 import sys
 
