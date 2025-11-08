@@ -1,0 +1,189 @@
+Super-strong, model-ready prompt (drop into a code-writing agent — make a complete project now)
+
+You are an expert full-stack developer and will generate an entire, ready-to-run project for the CIESA Faculty Portal as described below. Produce every file, folder, and line of code required so the app can be run locally and deployed to production. Use Flask (Python) for the backend and React + Vite (TypeScript) for the frontend (PWA). Use SQLite as the default relational DB (support notes for moving to MySQL/Postgres). Implement WebSockets for realtime chat, Service Worker + Web Push for notifications, cron for cleanup, and a secure credential backup/restore system. Use a modern, minimal grey/black/white UI. Include sample data and clear setup docs. Comment code where helpful.
+
+Global constraints
+
+Stack: Flask + Flask-SocketIO + SQLAlchemy + Alembic (optional) + Flask-Login + Flask-Session + bcrypt + PyWebPush + APScheduler for scheduled tasks. Frontend: React 18 + TypeScript, Vite, shadcn/ui style with Tailwind (monochrome theme), TanStack Query for server state, wouter (or react-router if preferred), and socket.io-client.
+
+PWA: manifest.json (provided), service worker with offline caching and push handling, install prompt (“Add to Home Screen”).
+
+Color scheme: greyscale only — specify CSS variables (e.g., --bg, --surface, --muted, --accent: #333). Include a theme toggle for dark (black/grey background, white text) and light (white/grey background, black text) modes, stored in localStorage.
+
+Security: bcrypt hashed passwords, session cookie HttpOnly, CSRF protection, input sanitization on server and client, validate file types and sizes, safe file storage in uploads/, automatic deletion of expired images/documents.
+
+All credentials stored hashed in DB; config.json contains initial admin/governor credentials (must be overwritten in production). Provide automated migration to DB from data/admin_backup.json.
+
+Provide a complete README with install, run, and deploy instructions.
+
+
+
+---
+
+Functional requirements (map to code & endpoints)
+
+1) Authentication & Roles
+
+Roles: student, department-governor, faculty-governor, admin.
+
+Students: can sign up with username, password, phone, reg_number, and select department by name (list comes from config.json). Student signup triggers the Interactive Signup Tutorial modal on first login.
+
+Governors & Admin: initial credentials seeded from config.json into DB on first run (and data/admin_backup.json used for restore).
+
+Implement RBAC checks on each endpoint (server side): e.g., only department-governor may post to their department; faculty-governor posts general notifications; admin overrides all restrictions.
+
+Use Flask-Login session cookies; configure SESSION_PERMANENT and session timeout to 480 minutes (8 hours). Cookies must be HttpOnly and set SameSite=Lax.
+
+
+2) Signup Guide
+
+Implement a SignupTutorialModal component triggered after student signs up or first login. Include step-by-step interactive tooltips describing features: chat, rooms, notifications, documents, AI mention, image expiry, watermark.
+
+Tutorial progress stored in localStorage per-user.
+
+
+3) Dashboard
+
+Notifications feed shows both general and department notifications. Support reactions (emoji), references (reply threads), comments, read/unread stamps.
+
+Watermark component visible at bottom-right on all pages: developer name and contact from config.json.
+
+Push notifications sent to subscribed devices when:
+
+New message posted in a room the user has access to.
+
+New notification posted targeting the user’s department or general.
+
+
+Push subscription endpoint: /api/push/subscribe and /api/push/unsubscribe. Save push subscription payload in DB (PushSubscriptions table).
+
+Notifications types: urgent, regular, cruise (add emojis).
+
+
+4) User Profiles
+
+Endpoint /api/users/:username returns profile (no pictures) showing username, phone, reg, role, department. Users can view other users' profiles; students can view other students' profiles; governors view all users; admin views everything.
+
+No avatars.
+
+
+5) Chat System
+Realtime chat via Socket.IO with persisted messages in DB.
+
+Rooms: General (global), department rooms (one per department), plus custom rooms; only admin can create/delete rooms.
+
+Message model supports: id, sender_id, room_id, timestamp, text, formatting (json: color, font, bold, italic), image_meta (filename, expiry_ts, url), reply_to (message id), edited_at, deleted_at, reactions (JSON map).
+
+Implement features:
+
+Send message, edit message (allowed to sender or admin), delete message.
+
+React to message (add/remove emoji), reply (threading), tap to highlight (UX).
+
+Mentions @username trigger a targeted notification and display.
+
+AI messages: detect if message contains @ai — server strips mention, forwards message + context (last N messages in room, sender name, department, room name) to AI API in config.json, stores AI response as a special message with sender='AI' and flags. If AI endpoint missing, return a fallback message explaining missing config. The AI endpoint does not require a key.
+
+Images: upload via /api/messages/upload-image. Accept images up to 10MB; store in uploads/images/ with randomized safe filename; create DB record with expiry = now + IMAGE_EXPIRE_HOURS (default 3). Cron job deletes expired files and DB entries hourly.
+
+Offline caching: service worker caches recent messages and static assets; store messages in IndexedDB for offline read and queue outgoing messages while offline (sync on reconnect).
+
+
+Socket.IO rooms: join/leave, server verifies user belongs to department for department rooms.
+
+The chat interface should resemble Telegram's: message bubbles with rounded corners and tails pointing to the sender side, user's own messages aligned to the right in darker grey bubbles, others to the left in lighter grey; small timestamps below each message; a fixed bottom input bar with expandable text field, emoji picker button, attachment button for images/documents (with drag-and-drop support), voice message button (optional, can be text-only), and circular send button that appears when text is entered. Include typing indicators (e.g., "User is typing..."), smooth auto-scroll to new messages, subtle fade-in animations for new messages, and a loading spinner for sending. Use CSS transitions or framer-motion for little animations like button hovers, message appearances, and theme switching.
+
+
+6) Document Uploads
+
+/api/documents/upload accepts PDF/DOC/DOCX only (max size 20MB). Store in uploads/docs/, DB record includes owner_id, filename, mime, uploaded_at, expires_at (nullable), watermark flag.
+
+Documents listing endpoint with role-based visibility (department access or general).
+
+Optional watermark implementation: when watermark is true, inject footer text with developer contact into PDFs on upload (server-side using PyPDF2 or similar).
+
+Expired documents are removed by cron.
+
+In the frontend (Documents.tsx), list uploaded documents that can be viewed in the UI (e.g., embed PDF preview if possible or open in new tab) and include a download button for each document (link to /api/documents/download/:id with authentication).
+
+
+7) Notifications & Updates
+
+/api/notifications/post restricted: department-governor posts with target_department_name set; faculty-governor posts general (null department). admin can post anywhere and view all.
+
+For posting notifications, include a checkbox in the UI for "Post generally" – if checked, set target_department_name to null so everybody can see it regardless of department (allow this for department-governors as well if checked, overriding their default department targeting).
+
+Any notifications posted, regardless of the person that posted it, can be viewed by everybody.
+
+Notifications track: id, type (urgent|regular|cruise), content, posted_by, timestamp, target_department_name (nullable), reactions (JSON), read_by set.
+
+Read/unread tracked per user; reaction counts stored in DB; comments allowed as threaded messages (reference message or notification id).
+
+Push notifications trigger server-side via pywebpush using saved PushSubscriptions.
+Governors and admins can delete notifications via /api/notifications/delete/:id (with RBAC check).
+
+
+8) Credential Backup / Restore
+
+Admin endpoint /api/admin/backup generates /data/admin_backup.json with all users, hashed passwords, and notifications (never include plaintext) and optionally sends via Telegram if configured. The backup file should follow this structure example: {"backupCreated":true,"users":[{"username":"faculty_gov","password":"$2b$10$m99dyWLHG5M3b8ZSIkkhD.dFv5KEasXX2MKFOFlR9a8SgPqAKszXq","phone":"+20 000 000 0000","role":"faculty-governor","departmentName":"All Departments"}, ... ]}. Include notifications in a similar array, e.g., "notifications": [array of notification objects with id, type, content, etc., without sensitive data].
+
+On app startup, backend checks data/admin_backup.json and restores missing users/notifications (do not overwrite existing users unless explicit override flag is set).
+
+Update the backup file (generate new admin_backup.json) on every significant action, such as new user sign up (save new creds hashed), posting a notification, deleting a notification, etc.
+
+If the admin clicks a manual button in the UI to send the backup to Telegram, send the current updated backup file to Telegram with a nice caption (e.g., "CIESA Portal Backup - [Date/Time]"), without stopping or affecting the automated interval send.
+
+The automated backup generation and optional Telegram send is scheduled via APScheduler based on intervals in config.json (e.g., backup_interval_hours for auto-generation and telegram_send_interval_hours for auto-send to Telegram if configured).
+
+Provide README notes about security risks and how to enable encryption for backup files (optional).
+
+
+9) Database Design (explicit schema)
+
+Implement SQLAlchemy models matching:
+
+User: id, username (unique), password_hash, phone, reg_number, role, department_name, created_at, tutorial_seen (bool).
+
+Department: id, name (unique).
+
+Room: id, name, type ('General'|'Department'|'Custom'), department_name (nullable), created_by_id, created_at.
+
+Message: id, sender_id, room_id, text, formatting (JSON), image_filename (nullable), image_expires_at (nullable), reply_to (nullable), edited_at (nullable), deleted_at (nullable), reactions (JSON).
+
+Notification: id, type, content, timestamp, posted_by_id, target_department_name (nullable), reactions (JSON), read_by (JSON list).
+
+Document: id, owner_id, filename, mime, uploaded_at, expires_at (nullable), watermark (bool).
+
+ActivityLog: id, actor_id, action, target_type, target_id, meta (JSON), timestamp.
+
+PushSubscription: id, user_id, subscription_json.
+
+
+Include DB indexes to speed lookups for messages by room and notifications by department. The database is purely SQLite with no additional keys or encryption.
+
+10) config.json (exact fields)
+
+Provide backend/config.json with the following example structure and default sample credentials (must be overwritten in production):
+
+{
+  "app": {
+    "name": "CIESA Faculty Portal",
+    "developer_contact": "Suleiman <dev@example.com>",
+    "image_expire_hours": 3,
+    "document_expire_hours": 24,
+    "session_timeout_minutes": 480
+  },
+  "departments": ["Computer Engineering","Information Systems","Software Engineering","Network Engineering"],
+  "admin": {"username":"admin","password":"ChangeMe123!"},
+  "faculty_governor": {"username":"faculty_gov","password":"ChangeMe123!"},
+  "department_governors": [
+    {"username":"ceng_gov","password":"ChangeMe123!","department":"Computer Engineering"},
+    {"username":"isys_gov","password":"ChangeMe123!","department":"Information Systems"},
+    {"username":"seng_gov","password":"ChangeMe123!","department":"Software Engineering"},
+    {"username":"neng_gov","password":"ChangeMe123!","department":"Network Engineering"}
+  ],
+  "ai": {"endpoint":"https://api.example.com/v1/ai"},
+  "telegram": {"bot_token":"","chat_id":""},
+  "push": {"vapid_public_key":"","vapid_private_key":"","contact_email":"dev@example.com"},
+  "system": {"backup_interval_hours":24, "telegram_send_interval_hours":24}
+}
