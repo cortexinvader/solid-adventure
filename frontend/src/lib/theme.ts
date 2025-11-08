@@ -1,6 +1,8 @@
+// src/utils/theme.ts
+
 export const getTheme = (): 'light' | 'dark' => {
   const stored = localStorage.getItem('theme')
-  return (stored as 'light' | 'dark') || 'light'
+  return (stored === 'light' || stored === 'dark') ? stored : 'light'
 }
 
 export const setTheme = (theme: 'light' | 'dark') => {
@@ -9,42 +11,16 @@ export const setTheme = (theme: 'light' | 'dark') => {
 }
 
 export const toggleTheme = () => {
-  const current = getTheme()
-  const next = current === 'light' ? 'dark' : 'light'
-  setTheme(next)
-  return next
-}
-
-export const initTheme = () => {
-  const theme = getTheme()
-  setTheme(theme)
-}
-export const initTheme = () => {
-  const savedTheme = localStorage.getItem('theme') || 'light'
-  document.documentElement.setAttribute('data-theme', savedTheme)
-}
-
-export const toggleTheme = () => {
   const current = document.documentElement.getAttribute('data-theme')
   const newTheme = current === 'dark' ? 'light' : 'dark'
-  document.documentElement.setAttribute('data-theme', newTheme)
-  localStorage.setItem('theme', newTheme)
+  setTheme(newTheme)
 }
+
 export const initTheme = () => {
   const savedTheme = localStorage.getItem('theme')
+  const theme = savedTheme === 'dark' ? 'dark' : 'light'
+  document.documentElement.setAttribute('data-theme', theme)
   if (savedTheme) {
-    document.documentElement.setAttribute('data-theme', savedTheme)
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const theme = prefersDark ? 'dark' : 'light'
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
+    localStorage.setItem('theme', theme) // ensure it's saved
   }
-}
-
-export const toggleTheme = () => {
-  const current = document.documentElement.getAttribute('data-theme')
-  const newTheme = current === 'dark' ? 'light' : 'dark'
-  document.documentElement.setAttribute('data-theme', newTheme)
-  localStorage.setItem('theme', newTheme)
 }
